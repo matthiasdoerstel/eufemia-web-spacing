@@ -24,7 +24,7 @@ Then invoke it in Claude Code with `/eufemia-web-spacing` (or let it trigger aut
 ## Requirements
 
 - Claude Code with the Figma MCP server (`use_figma`, `get_screenshot`, `get_metadata`).
-- Access to the **💻 Eufemia - Web** Figma library (file key `cdtwQD8IJ7pTeE45U148r1`).
+- Access to the **💻 Eufemia - Web** Figma library.
 
 ## The token model
 
