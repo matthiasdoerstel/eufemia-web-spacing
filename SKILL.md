@@ -9,6 +9,8 @@ Apply Gestalt-proximity hierarchy to DNB/Eufemia layouts, binding to the **actua
 
 > **Cardinal rule: bind the semantic token, not the value.** Eufemia's spacing chain is `semantic token → size primitive → number` (e.g. `page/responsive-layout-gap-sm` → `size/8` → `8`). Always bind the *semantic* token. Binding the `size/*` primitive — or worse, a hardcoded number — throws away the intent and won't follow the system. If a lookup resolves a token through an alias chain, bind the variable a designer would *name*, not the alias target you landed on.
 
+> 🏷️ **Naming your layers well makes the output noticeably better.** This skill infers each element's role (page, content area, section, card, field, label, input) partly from layer names. Clear, descriptive names like `Content Area`, `Section: Profile`, `Field`, or `Input` let it map the right token to the right level. Generic names (`Frame 1`, `Group 2`) force it to guess from structure alone, and misleading names can lead to the wrong spacing. **Name your layers for what they are, and you'll get a more accurate hierarchy.**
+
 ## When to use
 - Creating new screens or layouts in a DNB/Eufemia Figma file that need intentional, consistent spacing communicating visual hierarchy.
 - Refactoring spacing in an existing Eufemia design to improve readability and grouping.
@@ -91,7 +93,7 @@ There is no 12px (or any non-token value) in this system — the scale is 4/8/16
 
 ## Instructions
 0. **Run the pre-flight checks** (see "Before you apply" above): warn on official library components (testing only, explicit confirmation required) and ask about Figma Slots. Don't bind anything until these are cleared.
-1. **Map the nesting depth** from outermost to innermost (e.g. page → content area → section/card → field → label/input). If slots were approved in the pre-flight, treat each slot's content as its own branch.
+1. **Map the nesting depth** from outermost to innermost (e.g. page → content area → section/card → field → label/input), using layer names to identify each element's role. If names are generic or missing, fall back to structural depth — and tell the designer that naming layers will improve the result. If slots were approved in the pre-flight, treat each slot's content as its own branch.
 2. **Discover the spacing tokens.** Check whether the Eufemia Web library is enabled in the file (`teamLibrary.getAvailableLibraryVariableCollectionsAsync`). If the tokens aren't already available, **import them by key** from the Eufemia Web library with `figma.variables.importVariableByKeyAsync(key)` (keys in the tables above). **Never create local mirror variables and never bind `size/*` primitives.**
 3. **Bind the page-frame shell:** outermost frame `width` → `content-width`, `padding` (all four sides) → `content-padding`.
 4. **Assign the internal hierarchy** using the proximity walk — one step up the gap scale per level, innermost → outermost, defaulting to the **responsive** flavour:
