@@ -35,19 +35,26 @@ Apply Gestalt-proximity hierarchy to DNB/Eufemia layouts, binding to the **actua
 > Run `/eufemia-web-spacing help` anytime to see this again.
 
 ## Auto-update (throttled daily check)
-The skill keeps itself current from its GitHub repo. **Run this gate near the start of every invocation**, using the **skill's own directory** (the "Base directory for this skill" shown when the skill loads) as `$DIR`.
+The skill keeps itself current from its GitHub repo:
+
+```
+https://github.com/matthiasdoerstel/eufemia-web-spacing
+```
+
+**Run this gate near the start of every invocation**, using the **skill's own directory** (the "Base directory for this skill" shown when the skill loads) as `$DIR` and the repo above as `$REPO`.
 
 1. **Decide whether to check.** Force a check if the user invoked `update` (manual). Otherwise throttle to once per day: read `~/.claude/.eufemia-web-spacing-update-check`; if its contents equal today's date (`date +%F`), **skip the check entirely** and proceed to the work.
-2. **Check (only if not throttled).** The skill dir must be a git clone; if `$DIR/.git` doesn't exist, skip silently (copy-paste install — nothing to update against). Otherwise:
+2. **Check (only if not throttled).** The skill dir must be a git clone; if `$DIR/.git` doesn't exist, skip silently (copy-paste install — nothing to update against). Otherwise fetch the **pinned repo explicitly** (don't rely on whatever `origin` happens to point at):
    ```bash
-   git -C "$DIR" fetch --quiet origin main 2>/dev/null
+   REPO="https://github.com/matthiasdoerstel/eufemia-web-spacing.git"
+   git -C "$DIR" fetch --quiet "$REPO" main 2>/dev/null
    LOCAL=$(git -C "$DIR" rev-parse HEAD)
-   REMOTE=$(git -C "$DIR" rev-parse origin/main)
+   REMOTE=$(git -C "$DIR" rev-parse FETCH_HEAD)
    echo "$(date +%F)" > ~/.claude/.eufemia-web-spacing-update-check   # record the check
    ```
-3. **If `LOCAL` != `REMOTE`, notify and offer — do NOT pull silently.** Show the remote version (`git -C "$DIR" show origin/main:VERSION`) and a one-line summary, then ask if they want to update now. On confirmation:
+3. **If `LOCAL` != `REMOTE`, notify and offer — do NOT pull silently.** Show the remote version (`git -C "$DIR" show FETCH_HEAD:VERSION`) and a one-line summary, then ask if they want to update now. On confirmation:
    ```bash
-   git -C "$DIR" pull --ff-only origin main
+   git -C "$DIR" pull --ff-only "$REPO" main
    ```
    - `--ff-only` is deliberate: if it fails, the local copy has diverged (local edits). Don't force — tell the user and let them resolve.
    - The pull rewrites this SKILL.md, so the **new version takes effect on the next invocation**, not the current run. Say so.
