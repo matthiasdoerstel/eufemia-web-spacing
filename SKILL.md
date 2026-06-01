@@ -34,6 +34,27 @@ Apply Gestalt-proximity hierarchy to DNB/Eufemia layouts, binding to the **actua
 >
 > Run `/eufemia-web-spacing help` anytime to see this again.
 
+## Auto-update (throttled daily check)
+The skill keeps itself current from its GitHub repo. **Run this gate near the start of every invocation**, using the **skill's own directory** (the "Base directory for this skill" shown when the skill loads) as `$DIR`.
+
+1. **Decide whether to check.** Force a check if the user invoked `update` (manual). Otherwise throttle to once per day: read `~/.claude/.eufemia-web-spacing-update-check`; if its contents equal today's date (`date +%F`), **skip the check entirely** and proceed to the work.
+2. **Check (only if not throttled).** The skill dir must be a git clone; if `$DIR/.git` doesn't exist, skip silently (copy-paste install — nothing to update against). Otherwise:
+   ```bash
+   git -C "$DIR" fetch --quiet origin main 2>/dev/null
+   LOCAL=$(git -C "$DIR" rev-parse HEAD)
+   REMOTE=$(git -C "$DIR" rev-parse origin/main)
+   echo "$(date +%F)" > ~/.claude/.eufemia-web-spacing-update-check   # record the check
+   ```
+3. **If `LOCAL` != `REMOTE`, notify and offer — do NOT pull silently.** Show the remote version (`git -C "$DIR" show origin/main:VERSION`) and a one-line summary, then ask if they want to update now. On confirmation:
+   ```bash
+   git -C "$DIR" pull --ff-only origin main
+   ```
+   - `--ff-only` is deliberate: if it fails, the local copy has diverged (local edits). Don't force — tell the user and let them resolve.
+   - The pull rewrites this SKILL.md, so the **new version takes effect on the next invocation**, not the current run. Say so.
+4. If `LOCAL` == `REMOTE`, say nothing (or, on a manual `update`, confirm it's already current).
+
+Keep the check quiet and fast — never block the actual spacing work on it, and never auto-pull without the user's OK.
+
 ## When to use
 - Creating new screens or layouts in a DNB/Eufemia Figma file that need intentional, consistent spacing communicating visual hierarchy.
 - Refactoring spacing in an existing Eufemia design to improve readability and grouping.
@@ -118,7 +139,8 @@ There is no 12px (or any non-token value) in this system — the scale is 4/8/16
 
 ## Instructions
 0. **Onboarding gate** (see "Onboarding" above): show the orientation on first run (or on `help`), write the marker on first run, then continue.
-0a. **Run the pre-flight checks** (see "Before you apply" above): warn **only if the skill is being pointed at a component itself** (testing only, explicit confirmation) — component *instances* sitting inside the layout are normal, don't warn — and ask about Figma Slots. Don't bind anything until these are cleared.
+0a. **Auto-update gate** (see "Auto-update" above): run the throttled daily check (or forced check on `update`); notify and offer to update if behind, then continue.
+0b. **Run the pre-flight checks** (see "Before you apply" above): warn **only if the skill is being pointed at a component itself** (testing only, explicit confirmation) — component *instances* sitting inside the layout are normal, don't warn — and ask about Figma Slots. Don't bind anything until these are cleared.
 1. **Map the nesting depth** from outermost to innermost (e.g. page → content area → section/card → field → label/input), using layer names to identify each element's role. If names are generic or missing, fall back to structural depth — and tell the designer that naming layers will improve the result. If slots were approved in the pre-flight, treat each slot's content as its own branch.
 2. **Discover the spacing tokens.** Check whether the Eufemia Web library is enabled in the file (`teamLibrary.getAvailableLibraryVariableCollectionsAsync`). If the tokens aren't already available, **import them by key** from the Eufemia Web library with `figma.variables.importVariableByKeyAsync(key)` (keys in the tables above). **Never create local mirror variables and never bind `size/*` primitives.**
 3. **Bind the page-frame shell:** outermost frame `width` → `content-width`, `padding` (all four sides) → `content-padding`.

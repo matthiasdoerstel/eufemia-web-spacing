@@ -21,6 +21,9 @@ git clone https://github.com/matthiasdoerstel/eufemia-web-spacing.git ~/.claude/
 
 Then invoke it in Claude Code with `/eufemia-web-spacing` (or let it trigger automatically on Eufemia layout/spacing work). The first run shows a short onboarding; run `/eufemia-web-spacing help` anytime to see it again.
 
+### Staying up to date
+The skill checks this repo for updates once a day (only when you run it). If a newer version exists, it tells you and offers to update — it never pulls silently. You can also force a check with `/eufemia-web-spacing update`. Auto-update requires the git clone above (a copy-paste install won't self-update). Local edits are preserved: updates use `--ff-only`, so if your copy has diverged it'll stop and let you resolve it.
+
 ## Requirements
 
 - Claude Code with the Figma MCP server (`use_figma`, `get_screenshot`, `get_metadata`).
