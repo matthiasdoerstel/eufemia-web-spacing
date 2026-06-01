@@ -1,6 +1,6 @@
 # eufemia-web-spacing
 
-A [Claude Code](https://docs.claude.com/en/docs/claude-code) skill that helps **DNB designers apply the Eufemia spacing system** to their Figma layouts.
+A **Raicode** skill that helps **DNB designers apply the Eufemia spacing system** to their Figma layouts.
 
 It uses the Gestalt principle of proximity — related items close together, separate groups further apart — and binds every value to the **Eufemia Web library's semantic spacing tokens** (`page/content-width`, `page/content-padding`, `page/layout-gap-*`, `page/responsive-layout-gap-*`). It never binds raw `size/*` primitives or hardcoded numbers.
 
@@ -13,20 +13,20 @@ It uses the Gestalt principle of proximity — related items close together, sep
 
 ## Install
 
-Clone into your Claude Code skills directory:
+Clone into your Raicode skills directory:
 
 ```bash
 git clone https://github.com/matthiasdoerstel/eufemia-web-spacing.git ~/.claude/skills/eufemia-web-spacing
 ```
 
-Then invoke it in Claude Code with `/eufemia-web-spacing` (or let it trigger automatically on Eufemia layout/spacing work). The first run shows a short onboarding; run `/eufemia-web-spacing help` anytime to see it again.
+Then invoke it in Raicode with `/eufemia-web-spacing` (or let it trigger automatically on Eufemia layout/spacing work). The first run shows a short onboarding; run `/eufemia-web-spacing help` anytime to see it again.
 
 ### Staying up to date
 The skill checks this repo for updates once a day (only when you run it). If a newer version exists, it tells you and offers to update — it never pulls silently. You can also force a check with `/eufemia-web-spacing update`. Auto-update requires the git clone above (a copy-paste install won't self-update). Local edits are preserved: updates use `--ff-only`, so if your copy has diverged it'll stop and let you resolve it.
 
 ## Requirements
 
-- Claude Code with the Figma MCP server (`use_figma`, `get_screenshot`, `get_metadata`).
+- Raicode with the Figma MCP server (`use_figma`, `get_screenshot`, `get_metadata`).
 - Access to the **💻 Eufemia - Web** Figma library.
 
 ## The token model
