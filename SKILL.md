@@ -11,6 +11,29 @@ Apply Gestalt-proximity hierarchy to DNB/Eufemia layouts, binding to the **actua
 
 > 🏷️ **Naming your layers well makes the output noticeably better.** This skill infers each element's role (page, content area, section, card, field, label, input) partly from layer names. Clear, descriptive names like `Content Area`, `Section: Profile`, `Field`, or `Input` let it map the right token to the right level. Generic names (`Frame 1`, `Group 2`) force it to guess from structure alone, and misleading names can lead to the wrong spacing. **Name your layers for what they are, and you'll get a more accurate hierarchy.**
 
+## Onboarding (first run & `help`)
+**Do this before anything else, every invocation:**
+
+1. **Show the onboarding if needed.** Show the orientation below when **either**:
+   - the user invoked the skill with `help`, `--help`, `?`, or `onboard`, **or**
+   - the first-run marker file is missing. Check it with: `test -f ~/.claude/.eufemia-web-spacing-onboarded`.
+2. **After showing it on a first run, write the marker** so it won't auto-show again: `touch ~/.claude/.eufemia-web-spacing-onboarded`. (Don't write the marker when the user merely asked for `help` — only on the automatic first run.)
+3. If the marker exists and the user didn't ask for help, **skip onboarding** and go straight to the work.
+
+**Orientation to show:**
+
+> 👋 **Eufemia Web Spacing** — applies an intentional, responsive spacing hierarchy to your Figma *page layout* using the Eufemia Web design tokens.
+>
+> **What it does:** reads your layout's nesting (page → content area → section → field → label/input) and binds Eufemia spacing tokens so related things sit close and groups stay distinct — the page frame gets `content-width` + `content-padding`, everything inside gets the responsive `layout-gap` scale.
+>
+> **How to use it:** select the page/layout frame you want to space, then run the skill. It works best when the Eufemia Web library is available in your file and your **layers are named** for what they are (`Content Area`, `Section`, `Field`, `Input`).
+>
+> **What to expect:** it walks the spacing scale one step per nesting level (8 → 16 → 24 → 32 → 48 on desktop, compressing on mobile), binds real library tokens (never hardcoded numbers), and screenshots the result to verify the hierarchy reads.
+>
+> **Good to know:** it's a *layout* tool — pages full of components are fine; it spaces the frames *around* them. It will **not** edit a component's internals (that's testing-only and it'll warn you), and it'll **ask** before touching any Figma Slots.
+>
+> Run `/eufemia-web-spacing help` anytime to see this again.
+
 ## When to use
 - Creating new screens or layouts in a DNB/Eufemia Figma file that need intentional, consistent spacing communicating visual hierarchy.
 - Refactoring spacing in an existing Eufemia design to improve readability and grouping.
@@ -94,7 +117,8 @@ There is no 12px (or any non-token value) in this system — the scale is 4/8/16
 - Import → bind pattern: `const v = await figma.variables.importVariableByKeyAsync(key); node.setBoundVariable("itemSpacing", v);`
 
 ## Instructions
-0. **Run the pre-flight checks** (see "Before you apply" above): warn **only if the skill is being pointed at a component itself** (testing only, explicit confirmation) — component *instances* sitting inside the layout are normal, don't warn — and ask about Figma Slots. Don't bind anything until these are cleared.
+0. **Onboarding gate** (see "Onboarding" above): show the orientation on first run (or on `help`), write the marker on first run, then continue.
+0a. **Run the pre-flight checks** (see "Before you apply" above): warn **only if the skill is being pointed at a component itself** (testing only, explicit confirmation) — component *instances* sitting inside the layout are normal, don't warn — and ask about Figma Slots. Don't bind anything until these are cleared.
 1. **Map the nesting depth** from outermost to innermost (e.g. page → content area → section/card → field → label/input), using layer names to identify each element's role. If names are generic or missing, fall back to structural depth — and tell the designer that naming layers will improve the result. If slots were approved in the pre-flight, treat each slot's content as its own branch.
 2. **Discover the spacing tokens.** Check whether the Eufemia Web library is enabled in the file (`teamLibrary.getAvailableLibraryVariableCollectionsAsync`). If the tokens aren't already available, **import them by key** from the Eufemia Web library with `figma.variables.importVariableByKeyAsync(key)` (keys in the tables above). **Never create local mirror variables and never bind `size/*` primitives.**
 3. **Bind the page-frame shell:** outermost frame `width` → `content-width`, `padding` (all four sides) → `content-padding`.

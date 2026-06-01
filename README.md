@@ -19,7 +19,7 @@ Clone into your Claude Code skills directory:
 git clone https://github.com/matthiasdoerstel/eufemia-web-spacing.git ~/.claude/skills/eufemia-web-spacing
 ```
 
-Then invoke it in Claude Code with `/eufemia-web-spacing` (or let it trigger automatically on Eufemia layout/spacing work).
+Then invoke it in Claude Code with `/eufemia-web-spacing` (or let it trigger automatically on Eufemia layout/spacing work). The first run shows a short onboarding; run `/eufemia-web-spacing help` anytime to see it again.
 
 ## Requirements
 
