@@ -15,6 +15,45 @@ Apply Gestalt-proximity hierarchy to DNB/Eufemia layouts, binding to the **actua
 - Building components that nest inside larger containers and need spacing that scales with depth.
 - Standardizing spacing across a file to align with the Gestalt principle of proximity — related items close together, separate groups further apart.
 
+## Before you apply — required checks
+Run these against the current selection **before binding any spacing**. Both checks pause the workflow.
+
+### 1. Official library components — warn loudly, testing only
+Detect whether the selection **is, or contains, an official Eufemia library component**:
+- any `COMPONENT` or `COMPONENT_SET` node, **or**
+- any `INSTANCE` whose `mainComponent.remote === true` (an instance of a published library component), **or**
+- you are working inside the Eufemia Web library file itself (file key `cdtwQD8IJ7pTeE45U148r1`).
+
+If so, **STOP and surface this warning clearly before doing anything else:**
+
+> ⚠️ **This skill is NOT intended for official Eufemia library components.**
+> Changing the spacing of a shared component affects **every product that consumes it**. This is permitted **for testing purposes ONLY** — never as a real change to the official library.
+
+Only continue after the user **explicitly confirms it is for testing**. Otherwise stop and suggest they apply the skill to a local copy or a plain frame instead.
+
+### 2. Figma Slots — ask before including them
+Check the selection and its subtree for **Figma Slot nodes** (`node.type === 'SLOT'`). Slots are a newer Figma feature; if the running API doesn't expose the type, skip this check silently.
+
+If any slots are found, **ask the user** whether the spacing hierarchy should also be applied to the slots (and their contents), and only include them if they say yes. Treat each slot's content as its own nesting branch when applying the proximity walk.
+
+Quick detection script:
+```js
+const sel = figma.currentPage.selection;
+const slots = [];
+const libComponents = [];
+for (const n of sel) {
+  if (n.type === "COMPONENT" || n.type === "COMPONENT_SET") libComponents.push(n.id);
+  if (n.type === "INSTANCE") {
+    const mc = await n.getMainComponentAsync();
+    if (mc && mc.remote) libComponents.push(n.id);
+  }
+  const found = n.findAll ? n.findAll(d => d.type === "SLOT") : [];
+  if (n.type === "SLOT") slots.push(n.id);
+  slots.push(...found.map(s => s.id));
+}
+return { libComponents, slots };
+```
+
 ## The Eufemia Web spacing tokens
 Source library: **💻 Eufemia - Web**, file key `cdtwQD8IJ7pTeE45U148r1`. Spacing lives in the **`spacing`** collection (modes: `desktop` / `tablet` / `mobile`). Bind these — do **not** bind the underlying `size/*` primitives.
 
@@ -51,7 +90,8 @@ There is no 12px (or any non-token value) in this system — the scale is 4/8/16
 - Import → bind pattern: `const v = await figma.variables.importVariableByKeyAsync(key); node.setBoundVariable("itemSpacing", v);`
 
 ## Instructions
-1. **Map the nesting depth** from outermost to innermost (e.g. page → content area → section/card → field → label/input).
+0. **Run the pre-flight checks** (see "Before you apply" above): warn on official library components (testing only, explicit confirmation required) and ask about Figma Slots. Don't bind anything until these are cleared.
+1. **Map the nesting depth** from outermost to innermost (e.g. page → content area → section/card → field → label/input). If slots were approved in the pre-flight, treat each slot's content as its own branch.
 2. **Discover the spacing tokens.** Check whether the Eufemia Web library is enabled in the file (`teamLibrary.getAvailableLibraryVariableCollectionsAsync`). If the tokens aren't already available, **import them by key** from the Eufemia Web library with `figma.variables.importVariableByKeyAsync(key)` (keys in the tables above). **Never create local mirror variables and never bind `size/*` primitives.**
 3. **Bind the page-frame shell:** outermost frame `width` → `content-width`, `padding` (all four sides) → `content-padding`.
 4. **Assign the internal hierarchy** using the proximity walk — one step up the gap scale per level, innermost → outermost, defaulting to the **responsive** flavour:
