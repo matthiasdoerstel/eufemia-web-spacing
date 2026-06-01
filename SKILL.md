@@ -20,18 +20,22 @@ Apply Gestalt-proximity hierarchy to DNB/Eufemia layouts, binding to the **actua
 ## Before you apply — required checks
 Run these against the current selection **before binding any spacing**. Both checks pause the workflow.
 
-### 1. Official library components — warn loudly, testing only
-Detect whether the selection **is, or contains, an official Eufemia library component**:
-- any `COMPONENT` or `COMPONENT_SET` node, **or**
-- any `INSTANCE` whose `mainComponent.remote === true` (an instance of a published library component), **or**
-- you are working inside the Eufemia Web library file itself (file key `cdtwQD8IJ7pTeE45U148r1`).
+### 1. Don't apply layout tokens *to a component* — testing only
+This skill applies **layout** spacing to **layout containers** (the page, sections, cards, field wrappers — the frames that arrange content). A page that *contains* Eufemia component instances (buttons, inputs, etc.) is completely normal and **expected** — that's exactly what layout tokens are for. You space the layout frames *around* the instances; you never touch the instances' internals. **The mere presence of components on a page is not a problem.**
 
-If so, **STOP and surface this warning clearly before doing anything else:**
+The problem is only when the skill is pointed **at a component itself** — i.e. the request is to apply layout spacing *to* a Eufemia component or its internal structure. Trigger the warning only when:
+- the selected/target node **is** a `COMPONENT` or `COMPONENT_SET` (a main component, not an instance sitting in a layout), **or**
+- the user explicitly asks to apply the skill **to a Eufemia component** (e.g. "space the internals of this Button"), **or**
+- you'd be binding tokens **inside** a component's or instance's definition rather than on the surrounding layout.
 
-> ⚠️ **This skill is NOT intended for official Eufemia library components.**
-> Changing the spacing of a shared component affects **every product that consumes it**. This is permitted **for testing purposes ONLY** — never as a real change to the official library.
+In those cases, **STOP and surface this warning clearly:**
 
-Only continue after the user **explicitly confirms it is for testing**. Otherwise stop and suggest they apply the skill to a local copy or a plain frame instead.
+> ⚠️ **This skill is NOT intended to space the internals of Eufemia components.**
+> It applies *layout* tokens to *page layout*. A component's internal spacing is owned by the design system — overriding it affects every product that consumes the component. Doing this is permitted **for testing purposes ONLY**.
+
+Only continue after the user **explicitly confirms it is for testing**. Otherwise, redirect to the surrounding layout frames (or a local copy) instead.
+
+If the selection is a layout frame that simply *holds* component instances → **no warning, proceed normally**: bind tokens to the layout frames and leave every instance's internals untouched.
 
 ### 2. Figma Slots — ask before including them
 Check the selection and its subtree for **Figma Slot nodes** (`node.type === 'SLOT'`). Slots are a newer Figma feature; if the running API doesn't expose the type, skip this check silently.
@@ -42,18 +46,16 @@ Quick detection script:
 ```js
 const sel = figma.currentPage.selection;
 const slots = [];
-const libComponents = [];
+// Only flag components that ARE the target — NOT instances living inside a layout.
+const targetIsComponent = sel.some(n => n.type === "COMPONENT" || n.type === "COMPONENT_SET");
 for (const n of sel) {
-  if (n.type === "COMPONENT" || n.type === "COMPONENT_SET") libComponents.push(n.id);
-  if (n.type === "INSTANCE") {
-    const mc = await n.getMainComponentAsync();
-    if (mc && mc.remote) libComponents.push(n.id);
-  }
-  const found = n.findAll ? n.findAll(d => d.type === "SLOT") : [];
   if (n.type === "SLOT") slots.push(n.id);
+  const found = n.findAll ? n.findAll(d => d.type === "SLOT") : [];
   slots.push(...found.map(s => s.id));
 }
-return { libComponents, slots };
+// targetIsComponent → fire the testing-only warning (check 1).
+// Instances inside the layout are fine and intentionally ignored here.
+return { targetIsComponent, slots };
 ```
 
 ## The Eufemia Web spacing tokens
@@ -92,7 +94,7 @@ There is no 12px (or any non-token value) in this system — the scale is 4/8/16
 - Import → bind pattern: `const v = await figma.variables.importVariableByKeyAsync(key); node.setBoundVariable("itemSpacing", v);`
 
 ## Instructions
-0. **Run the pre-flight checks** (see "Before you apply" above): warn on official library components (testing only, explicit confirmation required) and ask about Figma Slots. Don't bind anything until these are cleared.
+0. **Run the pre-flight checks** (see "Before you apply" above): warn **only if the skill is being pointed at a component itself** (testing only, explicit confirmation) — component *instances* sitting inside the layout are normal, don't warn — and ask about Figma Slots. Don't bind anything until these are cleared.
 1. **Map the nesting depth** from outermost to innermost (e.g. page → content area → section/card → field → label/input), using layer names to identify each element's role. If names are generic or missing, fall back to structural depth — and tell the designer that naming layers will improve the result. If slots were approved in the pre-flight, treat each slot's content as its own branch.
 2. **Discover the spacing tokens.** Check whether the Eufemia Web library is enabled in the file (`teamLibrary.getAvailableLibraryVariableCollectionsAsync`). If the tokens aren't already available, **import them by key** from the Eufemia Web library with `figma.variables.importVariableByKeyAsync(key)` (keys in the tables above). **Never create local mirror variables and never bind `size/*` primitives.**
 3. **Bind the page-frame shell:** outermost frame `width` → `content-width`, `padding` (all four sides) → `content-padding`.
@@ -128,6 +130,7 @@ There is no 12px (or any non-token value) in this system — the scale is 4/8/16
 
 ## Common edge cases
 - **Tokens not enabled in the file:** Import them by key from the Eufemia Web library (`importVariableByKeyAsync`) — this works even if the library isn't enabled in the file. Do **not** recreate them locally.
+- **Page is full of component instances:** That's fine and expected — apply layout tokens to the surrounding layout frames and leave the instances' internals alone. The only thing that triggers the testing-only warning is pointing the skill *at a component itself* (see check 1).
 - **Tempted to bind a number:** Stop. Find the semantic token. If you only have a resolved value, that's a sign you grabbed the alias target (`size/*`) instead of the token — go back up the chain.
 - **Spacing must not change on mobile** (e.g. an icon-to-label gap inside a control): use the constant `page/layout-gap-*` flavour instead of responsive.
 - **Adjacent levels collide on the same step:** bump the outer level up one step. Never split the difference with a non-token value.
