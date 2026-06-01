@@ -1,6 +1,6 @@
 # eufemia-web-spacing
 
-A [Claude Code](https://docs.claude.com/en/docs/claude-code) skill for applying intentional, hierarchical spacing to **DNB / Eufemia** Figma layouts.
+A [Claude Code](https://docs.claude.com/en/docs/claude-code) skill that helps **DNB designers apply the Eufemia spacing system** to their Figma layouts.
 
 It uses the Gestalt principle of proximity — related items close together, separate groups further apart — and binds every value to the **Eufemia Web library's semantic spacing tokens** (`page/content-width`, `page/content-padding`, `page/layout-gap-*`, `page/responsive-layout-gap-*`). It never binds raw `size/*` primitives or hardcoded numbers.
 
