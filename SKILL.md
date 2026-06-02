@@ -1,6 +1,6 @@
 ---
 name: eufemia-web-spacing
-description: Use for Figma layout work in DNB/Eufemia files when creating new screens, refactoring spacing, standardizing hierarchy, or spacing nested components. Apply hierarchical spacing using the Gestalt principle of proximity so outer containers get proportionally more spacing than inner elements, binding to the Eufemia Web library's semantic spacing tokens (`page/content-width`, `page/content-padding`, `page/layout-gap-*`, `page/responsive-layout-gap-*`) — never to raw primitives or hardcoded values.
+description: Use for Figma layout work in DNB/Eufemia files when creating new screens, refactoring spacing, standardizing hierarchy, or spacing nested components. Apply hierarchical spacing using the Gestalt principle of proximity so outer containers get proportionally more spacing than inner elements, binding to the Eufemia Web library's semantic spacing tokens (`page/content-width`, `page/content-padding`, `page/responsive-layout-gap-*`) — never to raw primitives or hardcoded values.
 ---
 
 # Eufemia Web Spacing
@@ -120,20 +120,18 @@ Source library: **💻 Eufemia - Web**, file key `cdtwQD8IJ7pTeE45U148r1`. Spaci
 
 Apply `content-width` to the outermost page frame's width **always, regardless of its previous width**, and `content-padding` to that frame's padding. Everything *inside* uses the gap scale below.
 
-### Internal rhythm — gap scale (two flavours)
-| Step | px (constant / responsive→mobile) | `layout-gap-*` key (constant) | `responsive-layout-gap-*` key |
-|---|---|---|---|
-| xs | 4 / 4→2 | `d235e127119d9c4c33d4e31dfe2bce71c71d52b4` | `031d7c9f4bb2f11d2adaf02db9edd9a4ba6efb3c` |
-| sm | 8 / 8→4 | `b204bbba1da9d2e2b6bb451a674cb51ee22d9d1c` | `fa2b411b43ec509319db986b8a3d7bd98c994b2a` |
-| me | 16 / 16→8 | `713a78d1219922711995485aa28fe6127eb05cc7` | `4cb6fa0910d0cf43c7b6be0270d87456502d0c66` |
-| la | 24 / 24→16 | `5fc6dbe7ebb5c37ac9fcae9b2434b55d34e1d355` | `05723ee53f0cfd29a0e22871d104604e2e9952cf` |
-| xl | 32 / 32→24 | `14134a4b65c738308070b28923f95a2f31f4241c` | `36022c0edcbd39e65d797df0fee2b174bccc0d5f` |
-| 2xl | 40 / 40→32 | `88ffc90b1f8e7c4e89d02cf47b8e6300a5bb208b` | `905bf4c076b386bc8730ac8b8ab981d701235137` |
-| 3xl | 48 / 48→40 | `c7e77ef9a84120a401081ba8b2ec19a5b9403e38` | `880e617ada2fddc11c5f4c05a60f695ecb2e2b85` |
+### Internal rhythm — responsive gap scale
+Everything inside the page shell binds the **`page/responsive-layout-gap-*`** tokens: desktop/tablet hold, mobile compresses one step. All internal spacing is responsive — there is no constant variant in this skill.
 
-**Which flavour to use:**
-- **`page/responsive-layout-gap-*`** — desktop/tablet hold, mobile compresses one step. **Default** for normal page/section/field layout that should breathe less on small screens.
-- **`page/layout-gap-*`** — identical across all modes. Use **only** when spacing must stay constant regardless of breakpoint.
+| Step | px (desktop→mobile) | `responsive-layout-gap-*` key |
+|---|---|---|
+| xs | 4→2 | `031d7c9f4bb2f11d2adaf02db9edd9a4ba6efb3c` |
+| sm | 8→4 | `fa2b411b43ec509319db986b8a3d7bd98c994b2a` |
+| me | 16→8 | `4cb6fa0910d0cf43c7b6be0270d87456502d0c66` |
+| la | 24→16 | `05723ee53f0cfd29a0e22871d104604e2e9952cf` |
+| xl | 32→24 | `36022c0edcbd39e65d797df0fee2b174bccc0d5f` |
+| 2xl | 40→32 | `905bf4c076b386bc8730ac8b8ab981d701235137` |
+| 3xl | 48→40 | `880e617ada2fddc11c5f4c05a60f695ecb2e2b85` |
 
 There is no 12px (or any non-token value) in this system — the scale is 4/8/16/24/32/40/48.
 
@@ -148,23 +146,31 @@ There is no 12px (or any non-token value) in this system — the scale is 4/8/16
 0. **Onboarding gate** (see "Onboarding" above): show the orientation on first run (or on `help`), write the marker on first run, then continue.
 0a. **Auto-update gate** (see "Auto-update" above): run the throttled daily check (or forced check on `update`); notify and offer to update if behind, then continue.
 0b. **Run the pre-flight checks** (see "Before you apply" above): warn **only if the skill is being pointed at a component itself** (testing only, explicit confirmation) — component *instances* sitting inside the layout are normal, don't warn — and ask about Figma Slots. Don't bind anything until these are cleared.
-1. **Map the nesting depth** from outermost to innermost (e.g. page → content area → section/card → field → label/input), using layer names to identify each element's role. If names are generic or missing, fall back to structural depth — and tell the designer that naming layers will improve the result. If slots were approved in the pre-flight, treat each slot's content as its own branch.
-2. **Discover the spacing tokens.** Check whether the Eufemia Web library is enabled in the file (`teamLibrary.getAvailableLibraryVariableCollectionsAsync`). If the tokens aren't already available, **import them by key** from the Eufemia Web library with `figma.variables.importVariableByKeyAsync(key)` (keys in the tables above). **Never create local mirror variables and never bind `size/*` primitives.**
-3. **Bind the page-frame shell:** outermost frame `width` → `content-width`, `padding` (all four sides) → `content-padding`.
-4. **Assign the internal hierarchy** using the proximity walk — one step up the gap scale per level, innermost → outermost, defaulting to the **responsive** flavour:
+1. **Map the nesting depth** in a single read from outermost to innermost (e.g. page → content area → section/card → field → label/input), using layer names to identify each element's role. If names are generic or missing, fall back to structural depth — and tell the designer that naming layers will improve the result. If slots were approved in the pre-flight, treat each slot's content as its own branch.
+2. **Plan the token-per-level assignment** (no Figma roundtrip — pure reasoning) using the proximity walk, one step up the responsive gap scale per level, innermost → outermost:
    - label ↔ input → `responsive-layout-gap-sm`
    - field ↔ field & section-title ↔ fields → `responsive-layout-gap-me`
    - section padding & between-sections → `responsive-layout-gap-la`
    - content-area padding → `responsive-layout-gap-xl`
    - page-internal gap (title ↔ content) → `responsive-layout-gap-3xl`
    - If two adjacent levels would collide on the same step, bump the outer one up a step so each level is perceptibly different.
-5. **Apply via `use_figma`:**
-   - Padding → `setBoundVariable("paddingTop"|"paddingRight"|"paddingBottom"|"paddingLeft", token)` on auto-layout frames (maps to `Section`/`Card`/`Space` in code).
-   - Gap → `setBoundVariable("itemSpacing", token)` on auto-layout frames (maps to `Flex.Stack`/`Flex.Container` gaps in code).
-   - Width → `setBoundVariable("width", contentWidthToken)`.
-   - When widening a frame to `content-width`, set the child chain to `layoutSizingHorizontal = "FILL"` so content stretches cleanly.
-6. **Validate.** Read back `node.boundVariables` to confirm each property points at the *named semantic token* (not a `size/*` primitive or null). Screenshot to check the proximity hierarchy reads: outer groups clearly separated, inner items cohesive. Note: the REST screenshot resolves the collection's default (desktop) mode, while the plugin runtime may report another mode — a width of 1128 vs 375 just reflects which mode is active, not a bug.
-7. **Summarize** the token bound at each level (token name + px), and flag anything that had to fall back (e.g. a constant `layout-gap` where responsive wasn't wanted).
+3. **Apply everything in ONE `use_figma` script** — this is the speed-critical step. Don't split discovery, import, and binding into separate tool calls; each call is a roundtrip. In a single execution:
+   - **Import only the keys you actually need, in parallel** with `Promise.all` (never serially, never one tool call per key). Pattern:
+     ```js
+     const KEYS = { sm:"…", me:"…", la:"…", xl:"…", "3xl":"…", contentWidth:"…", contentPadding:"…" };
+     const pairs = await Promise.all(
+       Object.entries(KEYS).map(async ([n, k]) => [n, await figma.variables.importVariableByKeyAsync(k)])
+     );
+     const v = Object.fromEntries(pairs); // v.sm, v.contentWidth, …
+     ```
+     Never create local mirror variables and never bind `size/*` primitives.
+   - **Bind the page shell:** outermost frame `width` → `v.contentWidth`, all four paddings → `v.contentPadding`. When widening to content-width, set the child chain `layoutSizingHorizontal = "FILL"` so content stretches cleanly.
+   - **Bind the internal hierarchy** from the plan in step 2, in the same pass:
+     - Padding → `setBoundVariable("paddingTop"|"paddingRight"|"paddingBottom"|"paddingLeft", token)` on auto-layout frames (maps to `Section`/`Card`/`Space` in code).
+     - Gap → `setBoundVariable("itemSpacing", token)` on auto-layout frames (maps to `Flex.Stack`/`Flex.Container` gaps in code).
+   - **Return the `boundVariables` readback** for every touched node in the same script's return value, so validation needs no extra roundtrip.
+4. **Validate.** Use the readback returned by step 3 to confirm each property points at the *named semantic token* (not a `size/*` primitive or null). Then screenshot once to check the proximity hierarchy reads: outer groups clearly separated, inner items cohesive. Note: the REST screenshot resolves the collection's default (desktop) mode, while the plugin runtime may report another mode — a width of 1128 vs 375 just reflects which mode is active, not a bug.
+5. **Summarize** the token bound at each level (token name + px).
 
 ## Example
 
@@ -185,7 +191,6 @@ There is no 12px (or any non-token value) in this system — the scale is 4/8/16
 - **Tokens not enabled in the file:** Import them by key from the Eufemia Web library (`importVariableByKeyAsync`) — this works even if the library isn't enabled in the file. Do **not** recreate them locally.
 - **Page is full of component instances:** That's fine and expected — apply layout tokens to the surrounding layout frames and leave the instances' internals alone. The only thing that triggers the testing-only warning is pointing the skill *at a component itself* (see check 1).
 - **Tempted to bind a number:** Stop. Find the semantic token. If you only have a resolved value, that's a sign you grabbed the alias target (`size/*`) instead of the token — go back up the chain.
-- **Spacing must not change on mobile** (e.g. an icon-to-label gap inside a control): use the constant `page/layout-gap-*` flavour instead of responsive.
 - **Adjacent levels collide on the same step:** bump the outer level up one step. Never split the difference with a non-token value.
 - **Borders / divider lines (1–2px):** keep the layout on grid by subtracting the line thickness from the neighbouring element's padding rather than adding an off-grid value.
 - **Deeply nested (5+ levels):** the scale tops at 3xl (48); cap the outer levels there and compress inner levels while keeping the relative progression.
