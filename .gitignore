@@ -1,0 +1,4 @@
+# Local skill state — onboarding marker, update-check throttle.
+# Co-located so it survives --ff-only updates and makes no assumption
+# about ~/.claude vs ~/.raiwork. Never committed.
+.state/

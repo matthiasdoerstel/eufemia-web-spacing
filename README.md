@@ -13,16 +13,20 @@ It uses the Gestalt principle of proximity — related items close together, sep
 
 ## Install
 
-Clone into your Raicode skills directory:
+Clone the **release channel** (the `stable` branch) into your skills directory:
 
 ```bash
-git clone https://github.com/matthiasdoerstel/eufemia-web-spacing.git ~/.claude/skills/eufemia-web-spacing
+# Raiwork (desktop)
+git clone -b stable https://github.com/matthiasdoerstel/eufemia-web-spacing.git ~/.raiwork/skills/eufemia-web-spacing
+
+# Raicode (CLI)
+git clone -b stable https://github.com/matthiasdoerstel/eufemia-web-spacing.git ~/.claude/skills/eufemia-web-spacing
 ```
 
-Then invoke it in Raicode with `/eufemia-web-spacing` (or let it trigger automatically on Eufemia layout/spacing work). The first run shows a short onboarding; run `/eufemia-web-spacing help` anytime to see it again.
+Then invoke it with `/eufemia-web-spacing` (or let it trigger automatically on Eufemia layout/spacing work). The first run shows a short onboarding; run `/eufemia-web-spacing help` anytime to see it again.
 
 ### Staying up to date
-The skill checks this repo for updates once a day (only when you run it). If a newer version exists, it tells you and offers to update — it never pulls silently. You can also force a check with `/eufemia-web-spacing update`. Auto-update requires the git clone above (a copy-paste install won't self-update). Local edits are preserved: updates use `--ff-only`, so if your copy has diverged it'll stop and let you resolve it.
+The skill tracks a **release channel** — the `stable` branch — never `main`, so in-progress experiments don't reach you. Once a day (only when you run it) it does a lightweight read-only check of the channel's version; if a newer release exists, it shows you the changelog entry and **offers** to update — it never applies silently. You can force a check with `/eufemia-web-spacing update`. Applying an update requires the git clone above (a copy-paste install can't self-update — re-clone to upgrade). Local edits are preserved: updates use `--ff-only`, so if your copy has diverged it stops and lets you resolve it.
 
 ## Requirements
 

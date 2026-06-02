@@ -18,8 +18,8 @@ Apply Gestalt-proximity hierarchy to DNB/Eufemia layouts, binding to the **actua
 
 1. **Show the onboarding if needed.** Show the orientation below when **either**:
    - the user invoked the skill with `help`, `--help`, `?`, or `onboard`, **or**
-   - the first-run marker file is missing. Check it with: `test -f ~/.claude/.eufemia-web-spacing-onboarded`.
-2. **After showing it on a first run, write the marker** so it won't auto-show again: `touch ~/.claude/.eufemia-web-spacing-onboarded`. (Don't write the marker when the user merely asked for `help` — only on the automatic first run.)
+   - the first-run marker file is missing. Check it with: `test -f "$DIR/.state/onboarded"` (`$DIR` = the skill's base directory).
+2. **After showing it on a first run, write the marker** so it won't auto-show again: `mkdir -p "$DIR/.state"; touch "$DIR/.state/onboarded"`. (Don't write the marker when the user merely asked for `help` — only on the automatic first run.)
 3. If the marker exists and the user didn't ask for help, **skip onboarding** and go straight to the work.
 
 **Orientation to show:**
@@ -36,33 +36,40 @@ Apply Gestalt-proximity hierarchy to DNB/Eufemia layouts, binding to the **actua
 >
 > Run `/eufemia-web-spacing help` anytime to see this again.
 
-## Auto-update (throttled daily check)
-The skill keeps itself current from its GitHub repo:
+## Update channel (detect-only check, consented apply)
+This skill distributes through a **release channel — the `stable` branch** of its repo, never `main`. Day-to-day experiments live on `main` and never reach installs; a new version reaches designers only when the maintainer fast-forwards `stable` to a commit they've decided is ready. Designer clones track `stable`.
 
 ```
-https://github.com/matthiasdoerstel/eufemia-web-spacing
+Repo:    https://github.com/matthiasdoerstel/eufemia-web-spacing
+Channel: stable branch
 ```
 
-**Run this gate near the start of every invocation**, using the **skill's own directory** (the "Base directory for this skill" shown when the skill loads) as `$DIR` and the repo above as `$REPO`.
+**Run this gate near the start of every invocation.** `$DIR` = the skill's own base directory (the "Base directory for this skill" shown when the skill loads). State lives in `$DIR/.state/` — gitignored, co-located, and untouched by `--ff-only` pulls (no assumptions about `~/.claude` vs `~/.raiwork`).
 
-1. **Decide whether to check.** Force a check if the user invoked `update` (manual). Otherwise throttle to once per day: read `~/.claude/.eufemia-web-spacing-update-check`; if its contents equal today's date (`date +%F`), **skip the check entirely** and proceed to the work.
-2. **Check (only if not throttled).** The skill dir must be a git clone; if `$DIR/.git` doesn't exist, skip silently (copy-paste install — nothing to update against). Otherwise fetch the **pinned repo explicitly** (don't rely on whatever `origin` happens to point at):
+1. **Decide whether to check.** Force a check if the user invoked `update` (manual). Otherwise throttle to once per day: if `$DIR/.state/update-check` contains today's date (`date +%F`), **skip the check entirely** and go straight to the work.
+2. **Detect — read-only, no git.** Read the channel's `VERSION` directly over HTTPS. No `fetch`, no `pull`, nothing privileged — this works even for copy-paste installs and never rewrites a file as a side effect of merely checking:
    ```bash
-   REPO="https://github.com/matthiasdoerstel/eufemia-web-spacing.git"
-   git -C "$DIR" fetch --quiet "$REPO" main 2>/dev/null
-   LOCAL=$(git -C "$DIR" rev-parse HEAD)
-   REMOTE=$(git -C "$DIR" rev-parse FETCH_HEAD)
-   echo "$(date +%F)" > ~/.claude/.eufemia-web-spacing-update-check   # record the check
+   RAW="https://raw.githubusercontent.com/matthiasdoerstel/eufemia-web-spacing/stable"
+   REMOTE_VER=$(curl -fsSL "$RAW/VERSION" 2>/dev/null)
+   LOCAL_VER=$(cat "$DIR/VERSION" 2>/dev/null)
+   mkdir -p "$DIR/.state"; echo "$(date +%F)" > "$DIR/.state/update-check"
    ```
-3. **If `LOCAL` != `REMOTE`, notify and offer — do NOT pull silently.** Show the remote version (`git -C "$DIR" show FETCH_HEAD:VERSION`) and a one-line summary, then ask if they want to update now. On confirmation:
+3. **If `REMOTE_VER` is newer than `LOCAL_VER`, notify and show what changed — do NOT apply silently.** Read the matching changelog entry so the designer sees *why* they'd update, not just *that* they could:
    ```bash
-   git -C "$DIR" pull --ff-only "$REPO" main
+   curl -fsSL "$RAW/CHANGELOG.md" 2>/dev/null   # surface the entry for REMOTE_VER
+   ```
+   Then ask whether they want to update now.
+4. **Apply only on an explicit yes — the one privileged step.** Fast-forward the channel:
+   ```bash
+   git -C "$DIR" pull --ff-only \
+     "https://github.com/matthiasdoerstel/eufemia-web-spacing.git" stable
    ```
    - `--ff-only` is deliberate: if it fails, the local copy has diverged (local edits). Don't force — tell the user and let them resolve.
-   - The pull rewrites this SKILL.md, so the **new version takes effect on the next invocation**, not the current run. Say so.
-4. If `LOCAL` == `REMOTE`, say nothing (or, on a manual `update`, confirm it's already current).
+   - If `$DIR/.git` is missing (copy-paste install), skip the pull and tell the user how to update manually.
+   - The pull rewrites this SKILL.md, so the **new version takes effect on the next invocation**, not this run. Say so.
+5. If `REMOTE_VER` == `LOCAL_VER`, say nothing (on a manual `update`, confirm it's already current).
 
-Keep the check quiet and fast — never block the actual spacing work on it, and never auto-pull without the user's OK.
+Keep the check quiet and fast — never block the actual spacing work on it, and never apply without an explicit yes.
 
 ## When to use
 - Creating new screens or layouts in a DNB/Eufemia Figma file that need intentional, consistent spacing communicating visual hierarchy.
@@ -153,7 +160,7 @@ There is no 12px (or any non-token value) in this system — the scale is 4/8/16
 
 ## Instructions
 0. **Onboarding gate** (see "Onboarding" above): show the orientation on first run (or on `help`), write the marker on first run, then continue.
-0a. **Auto-update gate** (see "Auto-update" above): run the throttled daily check (or forced check on `update`); notify and offer to update if behind, then continue.
+0a. **Update-channel gate** (see "Update channel" above): run the throttled daily detect-only check (or forced check on `update`); if a newer release exists on the `stable` channel, show the changelog and offer to apply, then continue.
 0b. **Pre-flight + read in ONE call.** Run the combined detection script (see "Figma Slots" above) a single time. It returns `{ targetIsComponent, slots, tree }` — both the pre-flight flags *and* the structural tree step 1 needs. From that one result: warn **only if `targetIsComponent`** (testing only, explicit confirmation) — component *instances* sitting inside the layout are normal, don't warn — and ask about Figma `slots` if any. Don't bind anything until these are cleared. **Do not read the tree again** in step 1.
 1. **Map the nesting depth** from the `tree` already returned in 0b (no second read), outermost to innermost (e.g. page → content area → section/card → field → label/input), using layer names to identify each element's role. If names are generic or missing, fall back to structural depth (`depth` in the tree) — and tell the designer that naming layers will improve the result. If slots were approved in the pre-flight, treat each slot's content as its own branch.
 2. **Plan the token-per-level assignment** (no Figma roundtrip — pure reasoning) using the proximity walk, one step up the responsive gap scale per level, innermost → outermost:
