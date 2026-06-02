@@ -28,7 +28,7 @@ Apply Gestalt-proximity hierarchy to DNB/Eufemia layouts, binding to the **actua
 >
 > **How to use it:** select the page/layout frame you want to space, then run the skill. It works best when the Eufemia Web library is available in your file and your **layers are named** for what they are (`Content Area`, `Section`, `Field`, `Input`).
 >
-> **What to expect:** it walks the spacing scale one step per nesting level (8 → 16 → 24 → 32 → 48 on desktop, compressing on mobile), binds real library tokens (never hardcoded numbers), and screenshots the result to verify the hierarchy reads.
+> **What to expect:** it walks the spacing scale one step per nesting level (8 → 16 → 24 → 32 → 48 on desktop, compressing on mobile), binds real library tokens (never hardcoded numbers), and confirms each binding from the data it reads back — it skips the slower visual screenshot unless you ask to see the result.
 >
 > **Good to know:** it's a *layout* tool — pages full of components are fine; it spaces the frames *around* them. It will **not** edit a component's internals (that's testing-only and it'll warn you), and it'll **ask** before touching any Figma Slots.
 >
@@ -93,20 +93,27 @@ Check the selection and its subtree for **Figma Slot nodes** (`node.type === 'SL
 
 If any slots are found, **ask the user** whether the spacing hierarchy should also be applied to the slots (and their contents), and only include them if they say yes. Treat each slot's content as its own nesting branch when applying the proximity walk.
 
-Quick detection script:
+Quick detection script — **this is also the read that feeds step 1's mapping**, so return the structural tree alongside the flags. Run it once; don't read the tree again separately.
 ```js
 const sel = figma.currentPage.selection;
 const slots = [];
 // Only flag components that ARE the target — NOT instances living inside a layout.
 const targetIsComponent = sel.some(n => n.type === "COMPONENT" || n.type === "COMPONENT_SET");
-for (const n of sel) {
+const tree = sel.map(function walk(n, depth = 0) {
   if (n.type === "SLOT") slots.push(n.id);
-  const found = n.findAll ? n.findAll(d => d.type === "SLOT") : [];
-  slots.push(...found.map(s => s.id));
-}
+  return {
+    id: n.id, name: n.name, type: n.type, depth,
+    layoutMode: n.layoutMode,           // "NONE" means not an auto-layout frame
+    itemSpacing: n.itemSpacing,
+    paddingTop: n.paddingTop, paddingRight: n.paddingRight,
+    paddingBottom: n.paddingBottom, paddingLeft: n.paddingLeft,
+    width: n.width,
+    children: depth < 8 && n.children ? n.children.map(c => walk(c, depth + 1)) : []
+  };
+});
 // targetIsComponent → fire the testing-only warning (check 1).
 // Instances inside the layout are fine and intentionally ignored here.
-return { targetIsComponent, slots };
+return { targetIsComponent, slots, tree };
 ```
 
 ## The Eufemia Web spacing tokens
@@ -145,8 +152,8 @@ There is no 12px (or any non-token value) in this system — the scale is 4/8/16
 ## Instructions
 0. **Onboarding gate** (see "Onboarding" above): show the orientation on first run (or on `help`), write the marker on first run, then continue.
 0a. **Auto-update gate** (see "Auto-update" above): run the throttled daily check (or forced check on `update`); notify and offer to update if behind, then continue.
-0b. **Run the pre-flight checks** (see "Before you apply" above): warn **only if the skill is being pointed at a component itself** (testing only, explicit confirmation) — component *instances* sitting inside the layout are normal, don't warn — and ask about Figma Slots. Don't bind anything until these are cleared.
-1. **Map the nesting depth** in a single read from outermost to innermost (e.g. page → content area → section/card → field → label/input), using layer names to identify each element's role. If names are generic or missing, fall back to structural depth — and tell the designer that naming layers will improve the result. If slots were approved in the pre-flight, treat each slot's content as its own branch.
+0b. **Pre-flight + read in ONE call.** Run the combined detection script (see "Figma Slots" above) a single time. It returns `{ targetIsComponent, slots, tree }` — both the pre-flight flags *and* the structural tree step 1 needs. From that one result: warn **only if `targetIsComponent`** (testing only, explicit confirmation) — component *instances* sitting inside the layout are normal, don't warn — and ask about Figma `slots` if any. Don't bind anything until these are cleared. **Do not read the tree again** in step 1.
+1. **Map the nesting depth** from the `tree` already returned in 0b (no second read), outermost to innermost (e.g. page → content area → section/card → field → label/input), using layer names to identify each element's role. If names are generic or missing, fall back to structural depth (`depth` in the tree) — and tell the designer that naming layers will improve the result. If slots were approved in the pre-flight, treat each slot's content as its own branch.
 2. **Plan the token-per-level assignment** (no Figma roundtrip — pure reasoning) using the proximity walk, one step up the responsive gap scale per level, innermost → outermost:
    - label ↔ input → `responsive-layout-gap-sm`
    - field ↔ field & section-title ↔ fields → `responsive-layout-gap-me`
@@ -169,7 +176,7 @@ There is no 12px (or any non-token value) in this system — the scale is 4/8/16
      - Padding → `setBoundVariable("paddingTop"|"paddingRight"|"paddingBottom"|"paddingLeft", token)` on auto-layout frames (maps to `Section`/`Card`/`Space` in code).
      - Gap → `setBoundVariable("itemSpacing", token)` on auto-layout frames (maps to `Flex.Stack`/`Flex.Container` gaps in code).
    - **Return the `boundVariables` readback** for every touched node in the same script's return value, so validation needs no extra roundtrip.
-4. **Validate.** Use the readback returned by step 3 to confirm each property points at the *named semantic token* (not a `size/*` primitive or null). Then screenshot once to check the proximity hierarchy reads: outer groups clearly separated, inner items cohesive. Note: the REST screenshot resolves the collection's default (desktop) mode, while the plugin runtime may report another mode — a width of 1128 vs 375 just reflects which mode is active, not a bug.
+4. **Validate from the inline readback (no extra roundtrip by default).** Use the `boundVariables` readback returned by step 3 to confirm each property points at the *named semantic token* (not a `size/*` primitive or null). That readback proves the bindings are correct — it's enough on its own. **Skip the screenshot by default**; the designer can see the result on their own canvas instantly. Only screenshot when the user asks to *see* it, when the readback shows something unexpected, or when a binding failed and you need to diagnose visually. If you do screenshot, note: the REST screenshot resolves the collection's default (desktop) mode, while the plugin runtime may report another mode — a width of 1128 vs 375 just reflects which mode is active, not a bug.
 5. **Summarize** the token bound at each level (token name + px).
 
 ## Example
