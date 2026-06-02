@@ -13,13 +13,17 @@ It uses the Gestalt principle of proximity — related items close together, sep
 
 ## Install
 
-Clone the **release channel** (the `stable` branch) into your skills directory:
+Clone the **release channel** (the `stable` branch) into your skills directory.
+
+**Raiwork (desktop):**
 
 ```bash
-# Raiwork (desktop)
 git clone -b stable https://github.com/matthiasdoerstel/eufemia-web-spacing.git ~/.raiwork/skills/eufemia-web-spacing
+```
 
-# Raicode (CLI)
+**Raicode (CLI):**
+
+```bash
 git clone -b stable https://github.com/matthiasdoerstel/eufemia-web-spacing.git ~/.claude/skills/eufemia-web-spacing
 ```
 
