@@ -26,7 +26,7 @@ The skill checks this repo for updates once a day (only when you run it). If a n
 
 ## Requirements
 
-- Raicode (CLI) or Raiwork (desktop) with the Figma MCP server (`use_figma`, `get_metadata`; `get_screenshot` only for optional visual checks).
+- Raicode (CLI) or Raiwork (desktop) with the **official remote Figma MCP server** (`use_figma`, `get_metadata`; `get_screenshot` only for optional visual checks). It does **not** use `figma-console`, `pencil`, or any other Figma integration.
 - Access to the **💻 Eufemia - Web** Figma library.
 
 ## The token model
